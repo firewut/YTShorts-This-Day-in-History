@@ -1,0 +1,30 @@
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "tdih"
+version = "0.1.0"
+description = ""
+authors = ["Andrey Chibisov <andrey844@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+requests = "*"
+openai = "*"
+moviepy = "*"
+opencv-python = "*"
+pydantic = "*"
+python-dotenv = "*"
+
+[tool.poetry.dev-dependencies]
+ipdb = "*"
+isort = "*"
+mypy = "*"
+pytest = "*"
+
+[tool.poetry.scripts]
+create_shorts_for_today = "tdih.main:execute"
+generate_events = "tdih.main:generate_events"
+generate_shorts_from_events = "tdih.main:generate_shorts_from_events"
