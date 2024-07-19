@@ -1,0 +1,137 @@
+import io
+import pathlib
+import typing as t
+from abc import ABC, abstractmethod
+
+from openai.types.audio.transcription import Transcription
+
+from tdih.ai_services import AIServiceInterface
+from tdih.config import Settings
+from tdih.templates import PROMPT_TEMPLATE
+
+
+class ITextRequestService(ABC):
+    def get_completion(
+        self,
+        ai_service: AIServiceInterface,
+        settings: Settings,
+        existing_texts: list[str],
+    ) -> str:
+        """Get completion from the AI service."""
+        ...
+
+
+class TextRequestService(ITextRequestService):
+    def get_completion(
+        self,
+        ai_service: AIServiceInterface,
+        settings: Settings,
+        existing_texts: list[str],
+    ) -> str:
+        """Get completion from the AI service."""
+
+        text_prompt = [
+            {
+                "role": "system",
+                "content": PROMPT_TEMPLATE.format(
+                    today=settings.today,
+                    read_length=settings.read_length,
+                    previous_events="\n".join(existing_texts),
+                ),
+            },
+            {
+                "role": "user",
+                "content": "What happened today in history?",
+            },
+        ]
+
+        response = ai_service.get_completion(text_prompt)
+        return response.choices[0].message.content.strip()
+
+
+class ITTSRequestService(ABC):
+    @abstractmethod
+    def get_tts(
+        self, ai_service: AIServiceInterface, text: str, voice: str
+    ) -> io.BytesIO | None:
+        """Get TTS from the AI service."""
+        ...
+
+
+class TTSRequestService(ITTSRequestService):
+    def get_tts(
+        self, ai_service: AIServiceInterface, text: str, voice: str
+    ) -> io.BytesIO | None:
+        """Get TTS from the AI service."""
+        return ai_service.get_tts(text, voice)
+
+
+class ITranscriptionRequestService(ABC):
+    @abstractmethod
+    def get_transcription(
+        self,
+        ai_service: AIServiceInterface,
+        tts_buffer: io.BytesIO | None,
+    ) -> Transcription:
+        """Get TTS transcription from the AI service using the TTS input."""
+        pass
+
+
+class TranscriptionRequestService(ITranscriptionRequestService):
+    def get_transcription(
+        self, ai_service: AIServiceInterface, tts_buffer: io.BytesIO | None
+    ) -> Transcription:
+        """Get TTS transcription from the AI service using the TTS bytes."""
+        if not tts_buffer:
+            raise ValueError("TTS buffer is empty")
+
+        return ai_service.get_transcription(tts_buffer)
+
+
+class IImageRequestService(ABC):
+    @abstractmethod
+    def get_image(
+        self, ai_service: AIServiceInterface, settings: Settings, text: str
+    ) -> io.BytesIO:
+        """Generate an image using the AI service."""
+        ...
+
+    @abstractmethod
+    def multiple_from_transcription(
+        self,
+        ai_service: AIServiceInterface,
+        settings: Settings,
+        transcription: Transcription,
+    ) -> list[io.BytesIO]:
+        """Generate images using the AI service."""
+        ...
+
+
+class ImageRequestService(IImageRequestService):
+    def get_image(
+        self, ai_service: AIServiceInterface, settings: Settings, text: str
+    ) -> io.BytesIO:
+        return ai_service.get_image(text, settings)
+
+    def multiple_from_transcription(
+        self,
+        ai_service: AIServiceInterface,
+        settings: Settings,
+        text: str,
+        transcription: Transcription | None = None,
+    ) -> list[io.BytesIO]:
+        """Generate images using the AI service."""
+        if not transcription:
+            raise ValueError("Transcription is empty")
+
+        images_num = len(transcription.segments)
+        if images_num > settings.max_num_images_per_video:
+            images_num = settings.max_num_images_per_video
+
+        images_buffers: list[io.BytesIO] = []
+        for i in range(images_num):
+            image_buffer = self.get_image(ai_service, settings, text)
+            image_buffer.name = f"{i}_{image_buffer.name}"
+            images_buffers.append(image_buffer)
+
+        return images_buffers

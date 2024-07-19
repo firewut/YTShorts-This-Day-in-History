@@ -1,12 +1,23 @@
 import logging
-import os
 import threading
+import uuid
 
 from moviepy.editor import CompositeVideoClip, concatenate_videoclips
 
 from tdih.ai_services import AIServiceInterface, OpenAIService
 from tdih.config import load_settings
 from tdih.models import Event
+from tdih.services import (
+    IImageRequestService,
+    ImageRequestService,
+    ITextRequestService,
+    ITranscriptionRequestService,
+    ITTSRequestService,
+    TextRequestService,
+    TranscriptionRequestService,
+    TTSRequestService,
+)
+from tdih.storage import IEventsFileStorage, LocalEventsFileStorage
 from tdih.video import create_video
 
 logging.basicConfig(level=logging.INFO)
@@ -29,7 +40,7 @@ def generate_shorts_from_events(date: str | None = None) -> None:
         date = settings.today_str
 
     # Load all events for the given date
-    events = Event.load_all(settings.results_path, date_str=date)
+    events = Event.load_all(settings.events_path, date_str=date)
 
     for event in events:
         slides = event.generate_slides()
@@ -60,45 +71,55 @@ def generate_shorts_from_events(date: str | None = None) -> None:
 def generate_events() -> None:
     # Initialise AI
     ai_service: AIServiceInterface = OpenAIService(api_key=settings.api_key)
+    local_file_storage: IEventsFileStorage = LocalEventsFileStorage(
+        events_path=settings.events_path
+    )
+    text_service: ITextRequestService = TextRequestService()
+    tts_service: ITTSRequestService = TTSRequestService()
+    transcription_service: ITranscriptionRequestService = TranscriptionRequestService()
+    image_generation_service: IImageRequestService = ImageRequestService()
 
     # Prepare Events
     events: list[Event] = []
 
+    for _ in range(settings.num_events):
+        events.append(Event(id=uuid.uuid4(), date=settings.today))
+
     # These are the events that have already been generated. This is to avoid duplicates
-    previous_events = []
+    today_texts = []
 
-    for i in range(settings.num_events):
-        event_path = settings.results_path / str(i)
-        os.makedirs(event_path, exist_ok=True)
+    for event in events:
+        # Text Content
+        text = text_service.get_completion(ai_service, settings, today_texts)
+        event.text_file_path = local_file_storage.save_event_text(
+            settings.today_str, event.id, text
+        )
+        today_texts.append(text)
+        event.text = text
 
-        events.append(
-            Event(
-                date=settings.today,
-                event_path=event_path,
-            )
+        # Get TTS
+        tts_buffer = tts_service.get_tts(
+            ai_service, event.text, settings.tts_voice_strategy.pick_random_voice()
+        )
+        event.tts_file_path = local_file_storage.save_event_tts(
+            settings.today_str, event.id, tts_buffer
         )
 
-    # Get responses for each event
-    for event in events:
-        event.request_text(ai_service, settings, previous_events)
-        previous_events.append(event.text)
+        # Get TTS Transcription
+        transcription = transcription_service.get_transcription(ai_service, tts_buffer)
+        event.transcription = transcription
+        event.tts_duration = transcription.duration
+        event.transcription_file_path = local_file_storage.save_event_transcription(
+            settings.today_str, event.id, transcription
+        )
 
-    # Get TTS and TTS Transcription for each event
-    for event in events:
-        event.request_tts(ai_service, settings)
-        event.request_tts_transcription(ai_service, settings)
-        event.dump()
+        # Get Images
+        images_buffers = image_generation_service.multiple_from_transcription(
+            ai_service, settings, text, transcription
+        )
+        images_paths = local_file_storage.save_event_images(
+            settings.today_str, event.id, images_buffers
+        )
+        event.images_paths = images_paths
 
-    # Get images for each event
-    for event in events:
-        event.request_images(ai_service, settings)
-
-    for event in events:
-        event.video_file_path = (
-            event.event_path / f"video_{settings.today_str}.mp4"
-        ).relative_to(settings.root_path)
-
-        if event.transcription:
-            event.duration = event.transcription.duration
-
-        event.dump()
+        local_file_storage.dump_event(event)

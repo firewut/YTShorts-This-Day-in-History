@@ -45,15 +45,15 @@ class DefaultTTSVoiceStrategy(TTSVoiceStrategy):
 class Settings:
     settings_loader: ISettingsLoader
     tts_voice_strategy: TTSVoiceStrategy
+
     api_key: str = field(init=False)
     today_str: str = field(init=False)
-    root_path: pathlib.Path = field(init=False)
-    results_path: pathlib.Path = field(init=False)
+    events_path: pathlib.Path = field(init=False)
     num_events: int = 2
     video_width: int = 1080
     video_height: int = 1920
     video_fps: int = 30
-    video_length: int = 30  # Average video length seconds
+    read_length: int = 30  # Average read length seconds
     dalle_image_width: int = 1024
     dalle_image_height: int = 1024
     today: datetime.date = field(init=False)
@@ -64,12 +64,11 @@ class Settings:
         if not self.api_key:
             raise ValueError("OpenAI API Key is required")
 
-        self.today = datetime.date.today()
-        self.today_str: str = str(self.today)
+        self.events_path = pathlib.Path(__file__).parent.parent / "videos"
+        os.makedirs(self.events_path, exist_ok=True)
 
-        self.root_path = pathlib.Path(__file__).parent.parent
-        self.results_path = self.root_path / "videos" / self.today_str
-        os.makedirs(self.results_path, exist_ok=True)
+        self.today = datetime.date.today() + datetime.timedelta(days=1)
+        self.today_str: str = str(self.today)
 
 
 @lru_cache
