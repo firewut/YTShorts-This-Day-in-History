@@ -10,18 +10,20 @@ from abc import ABC, abstractmethod
 from openai.types.audio.transcription import Transcription
 from pydantic import BaseModel
 
+from tdih.models import Event
+
 
 class IEventsFileStorage(ABC):
     @abstractmethod
     def __init__(self, events_path: pathlib.Path) -> None: ...
 
     @abstractmethod
-    def load_events(self, date_str: str) -> list[t.Any]:
+    def load_events(self, date_str: str) -> list[Event]:
         """Load events from the directory."""
         ...
 
     @abstractmethod
-    def dump_event(self, event: t.Any) -> None:
+    def dump_event(self, event: Event) -> None:
         """Dump the event to a file."""
         ...
 
@@ -71,6 +73,10 @@ class IEventsFileStorage(ABC):
         """Retrieve the path to the event's images directory."""
         ...
 
+    def get_event_video_path(self, date_str: str, event_id: uuid.UUID) -> pathlib.Path:
+        """Retrieve the path to the event's video file."""
+        ...
+
 
 class LocalEventsFileStorage(IEventsFileStorage):
     root_path: pathlib.Path  # Path to the root directory of the project
@@ -85,20 +91,12 @@ class LocalEventsFileStorage(IEventsFileStorage):
         with open(event_path / f"event.json", "w") as f:
             f.write(event.model_dump_json(indent=4))
 
-    def load_events(self, date_str: str) -> list[t.Any]:
+    def load_events(self, date_str: str) -> list[Event]:
         events = []
 
-        for event_file in self.events_path.glob(f"*/event_{date_str}.json"):
+        for event_file in self.events_path.glob(f"{date_str}/*/event.json"):
             with open(event_file, "r") as f:
-                event_dict = json.load(f)
-                event_dict["date"] = datetime.datetime.strptime(
-                    event_dict["date"], "%Y-%m-%d"
-                ).date()
-                event_dict["id"] = uuid.UUID(event_dict["id"])
-                event_dict["transcription"] = Transcription.model_validate_json(
-                    event_dict["transcription"]
-                )
-                events.append(t.Any(**event_dict))
+                events.append(Event.model_validate_json(f.read()))
 
         return events
 
@@ -184,8 +182,6 @@ class LocalEventsFileStorage(IEventsFileStorage):
         """Retrieve the path to the event's images directory."""
         return self.get_event_path(date_str, event_id) / f"images/{image_name}"
 
-
-"""(self.event_path / filename).relative_to(
-            settings.root_path
-        )
-"""
+    def get_event_video_path(self, date_str: str, event_id: uuid.UUID) -> pathlib.Path:
+        """Retrieve the path to the event's video file."""
+        return self.get_event_path(date_str, event_id) / f"video.mp4"

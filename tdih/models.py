@@ -18,7 +18,7 @@ class Slide:
     text_color: str = "white"
     video_clip: TextClip | None = None
     background_color: str = "black"
-    background_image: str | None = None
+    background_image: pathlib.Path | None = None
 
 
 class Event(BaseModel):
@@ -36,21 +36,5 @@ class Event(BaseModel):
     transcription_file_path: pathlib.Path | None = None
     # Images
     images_paths: list[pathlib.Path] | None = None
-
-    # video_file_path: pathlib.Path | None = None
-
-    # def generate_slides(self) -> list[t.Self]:
-    #     slides = []
-
-    #     if not self.transcription:
-    #         raise ValueError("Text is not generated")
-
-    #     for idx, segment in enumerate(self.transcription.segments):
-    #         slide = Slide(
-    #             duration=segment["end"] - segment["start"],
-    #             text=segment["text"],
-    #             background_image=self.images[idx % len(self.images)],
-    #         )
-    #         slides.append(slide)
-
-    #     return slides
+    # Video
+    video_file_path: pathlib.Path | None = None

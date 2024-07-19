@@ -26,7 +26,7 @@ class SlideParamsExtractor(IParamsExtractor):
             "text_method": "caption",
             "text_bg_color": (0, 0, 0),
             "duration": slide.duration,
-            "background_image": slide.background_image,
+            "background_image": str(slide.background_image),
         }
 
 

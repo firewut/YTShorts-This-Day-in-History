@@ -67,7 +67,7 @@ class Settings:
         self.events_path = pathlib.Path(__file__).parent.parent / "videos"
         os.makedirs(self.events_path, exist_ok=True)
 
-        self.today = datetime.date.today() + datetime.timedelta(days=1)
+        self.today = datetime.date.today() + datetime.timedelta(days=2)
         self.today_str: str = str(self.today)
 
 

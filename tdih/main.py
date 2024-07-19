@@ -17,6 +17,7 @@ from tdih.services import (
     TranscriptionRequestService,
     TTSRequestService,
 )
+from tdih.slide_generator import SlideGenerator
 from tdih.storage import IEventsFileStorage, LocalEventsFileStorage
 from tdih.video import create_video
 
@@ -39,11 +40,14 @@ def generate_shorts_from_events(date: str | None = None) -> None:
     if not date:
         date = settings.today_str
 
-    # Load all events for the given date
-    events = Event.load_all(settings.events_path, date_str=date)
+    local_file_storage: IEventsFileStorage = LocalEventsFileStorage(
+        events_path=settings.events_path
+    )
+    slide_generator = SlideGenerator()
 
+    events = local_file_storage.load_events(settings.today_str)
     for event in events:
-        slides = event.generate_slides()
+        slides = slide_generator.generate_slides(event)
 
         clips: CompositeVideoClip = []
         for slide in slides:
@@ -52,20 +56,26 @@ def generate_shorts_from_events(date: str | None = None) -> None:
         # Concatenate text clips into a single video
         final_clip = concatenate_videoclips(clips, method="compose")
 
+        event.video_file_path = local_file_storage.get_event_video_path(
+            settings.today_str, event.id
+        )
+
         # Write the final video to a file with optimized settings
         final_clip.write_videofile(
-            event.video_file_path,
+            str(event.video_file_path),
             codec="libx264",
             fps=settings.video_fps,
             threads=threading.active_count(),
             preset="ultrafast",
-            audio=event.speech_file_path,
+            audio=str(event.tts_file_path),
         )
 
         # Close all text clips to release resources
         for clip in clips:
             clip.close()
         final_clip.close()
+
+        local_file_storage.dump_event(event)
 
 
 def generate_events() -> None:
