@@ -1,3 +1,4 @@
+import argparse
 import logging
 import threading
 import uuid
@@ -36,7 +37,18 @@ def execute() -> None:
     logging.info(f"Content generated for {settings.today_str}")
 
 
-def generate_shorts_from_events(date: str | None = None) -> None:
+def generate_shorts_from_events() -> None:
+    parser = argparse.ArgumentParser(description="Generate video shorts from events")
+    parser.add_argument(
+        "date",
+        type=str,
+        help="date to generate video shorts for",
+        default=settings.today_str,
+        nargs="?",
+    )
+
+    args = parser.parse_args()
+    date = args.date
     if not date:
         date = settings.today_str
 
@@ -45,7 +57,7 @@ def generate_shorts_from_events(date: str | None = None) -> None:
     )
     slide_generator = SlideGenerator()
 
-    events = local_file_storage.load_events(settings.today_str)
+    events = local_file_storage.load_events(date)
     for event in events:
         slides = slide_generator.generate_slides(event)
 
@@ -56,9 +68,7 @@ def generate_shorts_from_events(date: str | None = None) -> None:
         # Concatenate text clips into a single video
         final_clip = concatenate_videoclips(clips, method="compose")
 
-        event.video_file_path = local_file_storage.get_event_video_path(
-            settings.today_str, event.id
-        )
+        event.video_file_path = local_file_storage.get_event_video_path(date, event.id)
 
         # Write the final video to a file with optimized settings
         final_clip.write_videofile(
@@ -133,3 +143,50 @@ def generate_events() -> None:
         event.images_paths = images_paths
 
         local_file_storage.dump_event(event)
+
+
+def generate_event_from_text() -> None:
+    parser = argparse.ArgumentParser(description="Generate event from given text")
+    parser.add_argument("text", type=str, help="Text to be used for event generation")
+
+    args = parser.parse_args()
+    text = args.text
+
+    # Initialise AI
+    ai_service: AIServiceInterface = OpenAIService(api_key=settings.api_key)
+    local_file_storage: IEventsFileStorage = LocalEventsFileStorage(
+        events_path=settings.events_path
+    )
+    tts_service: ITTSRequestService = TTSRequestService()
+    transcription_service: ITranscriptionRequestService = TranscriptionRequestService()
+    image_generation_service: IImageRequestService = ImageRequestService()
+
+    event = Event(id=uuid.uuid4(), date=settings.today)
+    event.text = text
+
+    # Get TTS
+    tts_buffer = tts_service.get_tts(
+        ai_service, event.text, settings.tts_voice_strategy.pick_random_voice()
+    )
+    event.tts_file_path = local_file_storage.save_event_tts(
+        settings.today_str, event.id, tts_buffer
+    )
+
+    # Get TTS Transcription
+    transcription = transcription_service.get_transcription(ai_service, tts_buffer)
+    event.transcription = transcription
+    event.tts_duration = transcription.duration
+    event.transcription_file_path = local_file_storage.save_event_transcription(
+        settings.today_str, event.id, transcription
+    )
+
+    # Get Images
+    images_buffers = image_generation_service.multiple_from_transcription(
+        ai_service, settings, text, transcription
+    )
+    images_paths = local_file_storage.save_event_images(
+        settings.today_str, event.id, images_buffers
+    )
+    event.images_paths = images_paths
+
+    local_file_storage.dump_event(event)
