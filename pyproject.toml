@@ -11,12 +11,16 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
-requests = "*"
-openai = "*"
+google-api-python-client = "*"
+google-auth = "*"
+google-auth-httplib2 = "*"
+google-auth-oauthlib = "*"
 moviepy = "*"
+openai = "*"
 opencv-python = "*"
 pydantic = "*"
 python-dotenv = "*"
+requests = "*"
 
 [tool.poetry.dev-dependencies]
 ipdb = "*"
@@ -27,5 +31,6 @@ pytest = "*"
 [tool.poetry.scripts]
 create_shorts_for_today = "tdih.main:execute"
 generate_events = "tdih.main:generate_events"
-generate_shorts_from_events = "tdih.main:generate_shorts_from_events"
+generate_videos = "tdih.main:generate_videos"
 generate_event_from_text = "tdih.main:generate_event_from_text"
+upload_videos_to_youtube = "tdih.main:upload_videos_to_youtube"

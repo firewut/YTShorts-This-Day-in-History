@@ -9,18 +9,31 @@ from tdih.ai_services import AIServiceInterface, OpenAIService
 from tdih.config import load_settings
 from tdih.models import Event
 from tdih.services import (
+    DescriptionService,
+    IDescriptionService,
     IImageRequestService,
     ImageRequestService,
+    ITagsRequestService,
     ITextRequestService,
+    ITitleRequestService,
     ITranscriptionRequestService,
     ITTSRequestService,
+    TagsRequestService,
     TextRequestService,
+    TitleRequestService,
     TranscriptionRequestService,
     TTSRequestService,
 )
 from tdih.slide_generator import SlideGenerator
 from tdih.storage import IEventsFileStorage, LocalEventsFileStorage
+from tdih.templates import YOUTUBE_VIDEO_DESCRIPTION_SUFFIX, YOUTUBE_VIDEO_TITLE_PREFIX
 from tdih.video import create_video
+from tdih.youtube_uploader import (
+    YouTubeAuthenticator,
+    YouTubeUploadService,
+    YouTubeVideo,
+    YouTubeVideoUploader,
+)
 
 logging.basicConfig(level=logging.INFO)
 
@@ -32,12 +45,13 @@ def execute() -> None:
     logging.info(f"Generating content for {settings.today_str}")
 
     generate_events()
-    generate_shorts_from_events()
+    generate_videos()
+    upload_videos_to_youtube()
 
     logging.info(f"Content generated for {settings.today_str}")
 
 
-def generate_shorts_from_events() -> None:
+def generate_videos() -> None:
     parser = argparse.ArgumentParser(description="Generate video shorts from events")
     parser.add_argument(
         "date",
@@ -88,6 +102,46 @@ def generate_shorts_from_events() -> None:
         local_file_storage.dump_event(event)
 
 
+def upload_videos_to_youtube() -> None:
+    parser = argparse.ArgumentParser(description="Upload video shorts from events")
+    parser.add_argument(
+        "date",
+        type=str,
+        help="date to upload video shorts for",
+        default=settings.today_str,
+        nargs="?",
+    )
+
+    args = parser.parse_args()
+    date = args.date
+    if not date:
+        date = settings.today_str
+
+    local_file_storage: IEventsFileStorage = LocalEventsFileStorage(
+        events_path=settings.events_path
+    )
+
+    authenticator = YouTubeAuthenticator(settings)
+    uploader = YouTubeVideoUploader(authenticator)
+    upload_service = YouTubeUploadService(uploader)
+
+    events = local_file_storage.load_events(date)
+    for event in events:
+        tags = event.tags or []
+        tags.extend(settings.default_video_tags)
+
+        video_data = YouTubeVideo(
+            video_file_path=event.video_file_path,
+            title=f"{YOUTUBE_VIDEO_TITLE_PREFIX} {event.title}",
+            description=f"{event.description} YOUTUBE_VIDEO_DESCRIPTION_SUFFIX",
+            tags=tags,
+            category_id="24",  # Entertainment
+            made_for_kids=settings.youtube_made_for_kids,
+        )
+        upload_service.upload(video_data)
+        return
+
+
 def generate_events() -> None:
     # Initialise AI
     ai_service: AIServiceInterface = OpenAIService(api_key=settings.api_key)
@@ -95,6 +149,9 @@ def generate_events() -> None:
         events_path=settings.events_path
     )
     text_service: ITextRequestService = TextRequestService()
+    title_service: ITitleRequestService = TitleRequestService()
+    description_service: IDescriptionService = DescriptionService()
+    tags_service: ITagsRequestService = TagsRequestService()
     tts_service: ITTSRequestService = TTSRequestService()
     transcription_service: ITranscriptionRequestService = TranscriptionRequestService()
     image_generation_service: IImageRequestService = ImageRequestService()
@@ -116,6 +173,17 @@ def generate_events() -> None:
         )
         today_texts.append(text)
         event.text = text
+
+        # Get Title
+        event.title = title_service.get_title(ai_service, text)
+
+        # Get Description
+        event.description = description_service.get_description(
+            ai_service, text, exclude_words=[event.title.split(" ")]
+        )
+
+        # Get Tags
+        event.tags = tags_service.get_tags(ai_service, text, exclude_tags=[])
 
         # Get TTS
         tts_buffer = tts_service.get_tts(

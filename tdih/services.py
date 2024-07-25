@@ -7,7 +7,12 @@ from openai.types.audio.transcription import Transcription
 
 from tdih.ai_services import AIServiceInterface
 from tdih.config import Settings
-from tdih.templates import PROMPT_TEMPLATE
+from tdih.templates import (
+    DESCRIPTION_TEMPLATE,
+    PROMPT_TEMPLATE,
+    TAGS_TEMPLATE,
+    TITLE_TEMPLATE,
+)
 
 
 class ITextRequestService(ABC):
@@ -46,6 +51,94 @@ class TextRequestService(ITextRequestService):
         ]
 
         response = ai_service.get_completion(text_prompt)
+        return response.choices[0].message.content.strip()
+
+
+class ITitleRequestService(ABC):
+    @abstractmethod
+    def get_title(self, ai_service: AIServiceInterface, text: str) -> str:
+        """Get title from the AI service."""
+        ...
+
+
+class TitleRequestService(ITitleRequestService):
+    def get_title(self, ai_service: AIServiceInterface, text: str) -> str:
+        """Get title from the AI service."""
+        title_prompt = [
+            {
+                "role": "system",
+                "content": TITLE_TEMPLATE,
+            },
+            {
+                "role": "user",
+                "content": text,
+            },
+        ]
+
+        response = ai_service.get_completion(title_prompt)
+        return response.choices[0].message.content.strip()
+
+
+class ITagsRequestService(ABC):
+    @abstractmethod
+    def get_tags(
+        self, ai_service: AIServiceInterface, text: str, exclude_tags: list[str]
+    ) -> list[str]:
+        """Get tags from the AI service."""
+        ...
+
+
+class TagsRequestService(ITagsRequestService):
+    def get_tags(
+        self, ai_service: AIServiceInterface, text: str, exclude_tags: list[str]
+    ) -> list[str]:
+        """Get tags from the AI service."""
+        title_prompt = [
+            {
+                "role": "system",
+                "content": TAGS_TEMPLATE.format(
+                    exclude_tags=exclude_tags,
+                ),
+            },
+            {
+                "role": "user",
+                "content": text,
+            },
+        ]
+
+        response = ai_service.get_completion(title_prompt)
+        tags = response.choices[0].message.content
+        return [tag.strip() for tag in tags.split(",")]
+
+
+class IDescriptionService(ABC):
+    @abstractmethod
+    def get_description(
+        self, ai_service: AIServiceInterface, text: str, exclude_words: list[str]
+    ) -> str:
+        """Get description from the AI service."""
+        ...
+
+
+class DescriptionService(IDescriptionService):
+    def get_description(
+        self, ai_service: AIServiceInterface, text: str, exclude_words: list[str]
+    ) -> str:
+        """Get description from the AI service."""
+        title_prompt = [
+            {
+                "role": "system",
+                "content": DESCRIPTION_TEMPLATE.format(
+                    exclude_words=exclude_words,
+                ),
+            },
+            {
+                "role": "user",
+                "content": text,
+            },
+        ]
+
+        response = ai_service.get_completion(title_prompt)
         return response.choices[0].message.content.strip()
 
 

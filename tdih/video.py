@@ -16,7 +16,7 @@ class IParamsExtractor(ABC):
         pass
 
 
-# Concrete implementation for Slide parameter extraction
+# Implementation for Slide parameter extraction
 class SlideParamsExtractor(IParamsExtractor):
     def extract_params(self, slide: Slide) -> dict[str, t.Any]:
         return {
@@ -37,7 +37,7 @@ class IClipCreator(ABC):
         pass
 
 
-# Concrete implementation for background clip creation
+# Implementation for background clip creation
 class BackgroundClipCreator(IClipCreator):
     def create_clip(self, params: dict[str, t.Any]) -> ImageClip:
         return (
@@ -47,7 +47,7 @@ class BackgroundClipCreator(IClipCreator):
         )
 
 
-# Concrete implementation for text clip creation
+# Implementation for text clip creation
 class TextClipCreator(IClipCreator):
     def create_clip(
         self, params: dict[str, t.Any], background_clip: ImageClip
@@ -65,7 +65,7 @@ class TextClipCreator(IClipCreator):
         )
 
 
-# Concrete implementation for color clip creation
+# Implementation for color clip creation
 class ColorClipCreator(IClipCreator):
     def create_clip(self, params: dict[str, t.Any], text_clip: TextClip) -> ColorClip:
         return (

@@ -59,6 +59,17 @@ class Settings:
     today: datetime.date = field(init=False)
     max_num_images_per_video: int = 5  # Dall-e limitation per minute
 
+    default_video_tags: tuple[str] = ("history", "ai", "today")
+
+    youtube_oauth2_client_id: str = field(init=False)
+    youtube_oauth2_project_id: str = field(init=False)
+    youtube_oauth2_auth_uri: str = field(init=False)
+    youtube_oauth2_token_uri: str = field(init=False)
+    youtube_oauth2_auth_provider_x509_cert_url: str = field(init=False)
+    youtube_oauth2_client_secret: str = field(init=False)
+    youtube_oauth2_redirect_uris: list[str] = field(init=False)
+    youtube_made_for_kids: bool = False
+
     def __post_init__(self):
         self.api_key = self.settings_loader.load("OPENAI_API_KEY", None)
         if not self.api_key:
@@ -67,8 +78,31 @@ class Settings:
         self.events_path = pathlib.Path(__file__).parent.parent / "videos"
         os.makedirs(self.events_path, exist_ok=True)
 
-        self.today = datetime.date.today()
+        self.today = datetime.date.today() + datetime.timedelta(days=1)
         self.today_str: str = str(self.today)
+
+        # Youtube secrets
+        self.youtube_oauth2_client_id = self.settings_loader.load(
+            "YOUTUBE_OAUTH2_CLIENT_ID", None
+        )
+        self.youtube_oauth2_project_id = self.settings_loader.load(
+            "YOUTUBE_OAUTH2_PROJECT_ID", None
+        )
+        self.youtube_oauth2_auth_uri = self.settings_loader.load(
+            "YOUTUBE_OAUTH2_AUTH_URI", None
+        )
+        self.youtube_oauth2_token_uri = self.settings_loader.load(
+            "YOUTUBE_OAUTH2_TOKEN_URI", None
+        )
+        self.youtube_oauth2_auth_provider_x509_cert_url = self.settings_loader.load(
+            "YOUTUBE_OAUTH2_AUTH_PROVIDER_X509_CERT_URL", None
+        )
+        self.youtube_oauth2_client_secret = self.settings_loader.load(
+            "YOUTUBE_OAUTH2_CLIENT_SECRET", None
+        )
+        self.youtube_oauth2_redirect_uris = self.settings_loader.load(
+            "YOUTUBE_OAUTH2_REDIRECT_URIS", ""
+        ).split(",")
 
 
 @lru_cache
