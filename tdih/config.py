@@ -69,6 +69,7 @@ class Settings:
     youtube_oauth2_client_secret: str = field(init=False)
     youtube_oauth2_redirect_uris: list[str] = field(init=False)
     youtube_made_for_kids: bool = False
+    youtube_video_category: str = "24"  # Entertainment
 
     def __post_init__(self):
         self.api_key = self.settings_loader.load("OPENAI_API_KEY", None)
@@ -78,7 +79,7 @@ class Settings:
         self.events_path = pathlib.Path(__file__).parent.parent / "videos"
         os.makedirs(self.events_path, exist_ok=True)
 
-        self.today = datetime.date.today() + datetime.timedelta(days=1)
+        self.today = datetime.date.today()
         self.today_str: str = str(self.today)
 
         # Youtube secrets

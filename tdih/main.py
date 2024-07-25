@@ -130,16 +130,19 @@ def upload_videos_to_youtube() -> None:
         tags = event.tags or []
         tags.extend(settings.default_video_tags)
 
+        title_tags = ""
+        if tags:
+            title_tags = " #".join(tags)
+
         video_data = YouTubeVideo(
             video_file_path=event.video_file_path,
-            title=f"{YOUTUBE_VIDEO_TITLE_PREFIX} {event.title}",
-            description=f"{event.description} YOUTUBE_VIDEO_DESCRIPTION_SUFFIX",
+            title=f"{YOUTUBE_VIDEO_TITLE_PREFIX} {event.title} {title_tags}",
+            description=f"{event.description} {YOUTUBE_VIDEO_DESCRIPTION_SUFFIX}",
             tags=tags,
-            category_id="24",  # Entertainment
+            category_id=settings.youtube_video_category,
             made_for_kids=settings.youtube_made_for_kids,
         )
         upload_service.upload(video_data)
-        return
 
 
 def generate_events() -> None:
