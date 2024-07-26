@@ -40,7 +40,7 @@ class TextRequestService(ITextRequestService):
                 "role": "system",
                 "content": PROMPT_TEMPLATE.format(
                     today=settings.today,
-                    read_length=settings.read_length,
+                    words_count=settings.words_count,
                     previous_events="\n".join(existing_texts),
                 ),
             },

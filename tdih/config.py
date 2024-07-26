@@ -53,7 +53,7 @@ class Settings:
     video_width: int = 1080
     video_height: int = 1920
     video_fps: int = 30
-    read_length: int = 30  # Average read length seconds
+    words_count: int = 30
     dalle_image_width: int = 1024
     dalle_image_height: int = 1024
     today: datetime.date = field(init=False)

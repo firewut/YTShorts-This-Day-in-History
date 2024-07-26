@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from moviepy.editor import TextClip
 from openai.types.audio.transcription import Transcription
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 logging.basicConfig(level=logging.INFO)
 
@@ -26,7 +26,7 @@ class Event(BaseModel):
     date: datetime.date
 
     # Title
-    title: str | None = None
+    title: str | None = Field(None, max_length=100)
 
     # Description
     description: str | None = None
