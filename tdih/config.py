@@ -61,6 +61,8 @@ class Settings:
 
     default_video_tags: tuple[str] = ("history", "ai", "today")
 
+    youtube_channel_title: str = "Today in history"
+    youtube_channel_id: str = "UCgiSRFK7zOCi3gP8ofAaH9A"
     youtube_oauth2_client_id: str = field(init=False)
     youtube_oauth2_project_id: str = field(init=False)
     youtube_oauth2_auth_uri: str = field(init=False)
@@ -69,7 +71,7 @@ class Settings:
     youtube_oauth2_client_secret: str = field(init=False)
     youtube_oauth2_redirect_uris: list[str] = field(init=False)
     youtube_made_for_kids: bool = False
-    youtube_video_category: str = "24"  # Entertainment
+    youtube_video_category: str = "22"  # People and Blogs
 
     def __post_init__(self):
         self.api_key = self.settings_loader.load("OPENAI_API_KEY", None)

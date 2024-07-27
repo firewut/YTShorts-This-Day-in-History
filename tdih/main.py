@@ -123,7 +123,7 @@ def upload_videos_to_youtube() -> None:
 
     authenticator = YouTubeAuthenticator(settings)
     uploader = YouTubeVideoUploader(authenticator)
-    upload_service = YouTubeUploadService(uploader)
+    upload_service = YouTubeUploadService(uploader, settings)
 
     events = local_file_storage.load_events(date)
     for event in events:
@@ -132,6 +132,9 @@ def upload_videos_to_youtube() -> None:
 
         title_tags = ""
         if tags:
+            tags = [
+                tag.lower().replace(" ", "") for tag in tags
+            ]  # Convert each tag to lowercase
             title_tags = " #".join(tags)
 
         video_data = YouTubeVideo(

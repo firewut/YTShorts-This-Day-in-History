@@ -2,6 +2,8 @@ import pathlib
 import typing as t
 from abc import ABC, abstractmethod
 
+from tdih.config import Settings
+
 
 # IAuthenticator Interface
 class IAuthenticator(ABC):
@@ -23,5 +25,5 @@ class IVideo(ABC):
 # IVideoUploader Interface
 class IVideoUploader(ABC):
     @abstractmethod
-    def upload_video(self, video: IVideo):
+    def upload_video(self, settings: Settings, video: IVideo):
         pass

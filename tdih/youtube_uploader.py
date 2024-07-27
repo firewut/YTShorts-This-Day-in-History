@@ -44,13 +44,17 @@ class YouTubeVideo(IVideo, BaseModel):
     def get_video_file_path(self) -> pathlib.Path:
         return self.video_file_path
 
-    def get_snippet(self) -> dict[str, t.Any]:
+    def get_snippet(self, settings: Settings) -> dict[str, t.Any]:
+        # https://developers.google.com/youtube/v3/docs/videos
         return {
             "snippet": {
+                "channelTitle": settings.youtube_channel_title,
+                "channelId": settings.youtube_channel_id,
                 "title": self.title,
                 "description": self.description,
                 "tags": self.tags,
                 "categoryId": self.category_id,
+                "defaultLanguage": "en",
             },
             "status": {
                 "privacyStatus": "private",
@@ -111,12 +115,15 @@ class YouTubeVideoUploader(IVideoUploader):
         self.authenticator = authenticator
         self.youtube = self.authenticator.authenticate()
 
-    def upload_video(self, video: YouTubeVideo):
+    def upload_video(self, settings: Settings, video: YouTubeVideo):
         # Upload video logic using YouTube Data API
         media_body = MediaFileUpload(
-            video.get_video_file_path(), chunksize=-1, resumable=True
+            filename=video.get_video_file_path(),
+            mimetype="video/mp4",
+            chunksize=-1,
+            resumable=True,
         )
-        body = video.get_snippet()
+        body = video.get_snippet(settings)
         request = self.youtube.videos().insert(
             part="snippet,status", body=body, media_body=media_body
         )
@@ -133,8 +140,9 @@ class YouTubeVideoUploader(IVideoUploader):
 
 # YouTubeUploadService Class
 class YouTubeUploadService:
-    def __init__(self, uploader: IVideoUploader):
+    def __init__(self, uploader: IVideoUploader, settings: Settings):
         self.uploader = uploader
+        self.settings = settings
 
     def upload(self, video: YouTubeVideo):
-        self.uploader.upload_video(video)
+        self.uploader.upload_video(self.settings, video)
