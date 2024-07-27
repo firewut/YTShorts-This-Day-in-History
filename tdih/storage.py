@@ -5,7 +5,6 @@ import uuid
 from abc import ABC, abstractmethod
 
 from openai.types.audio.transcription import Transcription
-from pydantic import BaseModel
 
 from tdih.models import Event
 
@@ -24,52 +23,64 @@ class IEventsFileStorage(ABC):
         """Dump the event to a file."""
         ...
 
+    @abstractmethod
     def get_event_path(self, date_str: str, event_id: uuid.UUID) -> pathlib.Path:
         """Retrieve the path to the event's directory."""
         ...
 
-    def save_event_text(self, event_id: uuid.UUID, text: str) -> pathlib.Path:
+    @abstractmethod
+    def save_event_text(
+        self, date_str: str, event_id: uuid.UUID, text: str
+    ) -> pathlib.Path:
         """Save the event's text and return the path to the text file."""
         ...
 
+    @abstractmethod
     def get_event_text_path(self, date_str: str, event_id: uuid.UUID) -> pathlib.Path:
         """Retrieve the path to the event's text file."""
         ...
 
+    @abstractmethod
     def save_event_tts(
         self, date_str: str, event_id: uuid.UUID, tts: io.BytesIO | None
     ) -> pathlib.Path:
         """Save the event's TTS and return the path to the TTS file."""
         ...
 
+    @abstractmethod
     def get_event_tts_path(self, date_str: str, event_id: uuid.UUID) -> pathlib.Path:
         """Retrieve the path to the event's TTS file."""
         ...
 
+    @abstractmethod
     def save_event_transcription(
         self, date_str: str, event_id: uuid.UUID, transcription: Transcription
     ) -> pathlib.Path:
         """Save the event's transcription and return the path to the transcription file."""
         ...
 
+    @abstractmethod
     def get_event_transcription_path(
         self, date_str: str, event_id: uuid.UUID
     ) -> pathlib.Path:
         """Retrieve the path to the event's transcription file."""
         ...
 
+    @abstractmethod
     def save_event_images(
         self, date_str: str, event_id: uuid.UUID, images: list[io.BytesIO]
     ) -> list[pathlib.Path]:
         """Save the event's images and return the paths to the image files."""
         ...
 
+    @abstractmethod
     def get_event_images_path(
-        self, date_str: str, event_id: uuid.UUID, image_id: int
+        self, date_str: str, event_id: uuid.UUID, image_name: str
     ) -> pathlib.Path:
         """Retrieve the path to the event's images directory."""
         ...
 
+    @abstractmethod
     def get_event_video_path(self, date_str: str, event_id: uuid.UUID) -> pathlib.Path:
         """Retrieve the path to the event's video file."""
         ...
@@ -83,7 +94,7 @@ class LocalEventsFileStorage(IEventsFileStorage):
         self.events_path = events_path
         self.root_path = pathlib.Path(__file__).parent.parent
 
-    def dump_event(self, event: BaseModel) -> None:
+    def dump_event(self, event: Event) -> None:
         event_path = self.get_event_path(date_str=str(event.date), event_id=event.id)
         with open(event_path / f"event.json", "w") as f:
             f.write(event.model_dump_json(indent=4))

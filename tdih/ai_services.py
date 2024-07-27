@@ -24,6 +24,7 @@ class IAIService(ABC):
         """Get the default TTS model for the AI service."""
         ...
 
+    @abstractmethod
     def get_default_transcription_model(self) -> str:
         """Get the default transcription model."""
         ...
@@ -34,7 +35,9 @@ class IAIService(ABC):
         ...
 
     @abstractmethod
-    def get_completion(self, messages: list[dict[str, t.Any]], model: str) -> t.Any:
+    def get_completion(
+        self, messages: list[dict[str, t.Any]], model: str | None
+    ) -> t.Any:
         """Get completion from the AI service."""
         ...
 
@@ -78,14 +81,14 @@ class OpenAIService(IAIService):
 
     def get_completion(
         self, messages: list[dict[str, t.Any]], model: str | None = None
-    ) -> openai.ChatCompletion:
+    ) -> openai.types.chat.ChatCompletion:
         """Get completion from OpenAI."""
 
         if not model:
             model = self.get_default_completion_model()
 
         return self.client.chat.completions.create(
-            model=model, messages=messages, timeout=60
+            model=model, messages=messages, timeout=60  # type: ignore
         )
 
     def get_tts(self, text: str, voice: str) -> io.BytesIO | None:
@@ -94,7 +97,7 @@ class OpenAIService(IAIService):
         tts_buffer = io.BytesIO()
         with self.client.audio.speech.with_streaming_response.create(
             model=self.get_default_tts_model(),
-            voice=voice,
+            voice=voice,  # type: ignore
             input=text,
             response_format="mp3",
             timeout=60,
@@ -107,7 +110,7 @@ class OpenAIService(IAIService):
                     tts_buffer.name = f"{temp_file}.mp3"
                 return tts_buffer
 
-        return
+        return None
 
     def get_transcription(self, tts_buffer: io.BytesIO) -> Transcription:
         """Get TTS transcription from OpenAI service using the TTS file path."""
@@ -128,15 +131,18 @@ class OpenAIService(IAIService):
         response = self.client.images.generate(
             model=self.get_default_image_model(),
             prompt=text,
-            size=f"{settings.dalle_image_width}x{settings.dalle_image_height}",
+            size=f"{settings.dalle_image_width}x{settings.dalle_image_height}",  # type: ignore
             quality="hd",
             n=1,
             timeout=60,
         )
-        image_buffer = None
+        image_buffer = io.BytesIO()
 
         try:
             for j, image in enumerate(response.data):
+                if not image.url:
+                    raise ValueError("Image URL not found in the response.")
+
                 content = requests.get(image.url).content
                 image_buffer = io.BytesIO(content)
                 image_buffer.name = f"image_{j}.png"
@@ -146,8 +152,8 @@ class OpenAIService(IAIService):
         return image_buffer
 
 
-# AIServiceInterface now depends on the abstraction rather than a concrete implementation
-class AIServiceInterface:
+# AIService now depends on the abstraction rather than a concrete implementation
+class AIService:
     def __init__(self, ai_service: IAIService) -> None:
         self.ai_service = ai_service
 

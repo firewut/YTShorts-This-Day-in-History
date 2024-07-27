@@ -33,13 +33,21 @@ class SlideParamsExtractor(IParamsExtractor):
 # Interface for clip creation
 class IClipCreator(ABC):
     @abstractmethod
-    def create_clip(self, params: dict[str, t.Any]) -> t.Any:
+    def create_clip(
+        self,
+        params: dict[str, t.Any],
+        reference_clip: ImageClip | TextClip | None,
+    ) -> t.Any:
         pass
 
 
 # Implementation for background clip creation
 class BackgroundClipCreator(IClipCreator):
-    def create_clip(self, params: dict[str, t.Any]) -> ImageClip:
+    def create_clip(
+        self,
+        params: dict[str, t.Any],
+        reference_clip: ImageClip | TextClip | None,
+    ) -> ImageClip:
         return (
             ImageClip(params["background_image"])
             .resize((settings.video_width, settings.video_height))
@@ -50,7 +58,9 @@ class BackgroundClipCreator(IClipCreator):
 # Implementation for text clip creation
 class TextClipCreator(IClipCreator):
     def create_clip(
-        self, params: dict[str, t.Any], background_clip: ImageClip
+        self,
+        params: dict[str, t.Any],
+        background_clip: ImageClip,
     ) -> TextClip:
         return (
             TextClip(
@@ -67,7 +77,11 @@ class TextClipCreator(IClipCreator):
 
 # Implementation for color clip creation
 class ColorClipCreator(IClipCreator):
-    def create_clip(self, params: dict[str, t.Any], text_clip: TextClip) -> ColorClip:
+    def create_clip(
+        self,
+        params: dict[str, t.Any],
+        text_clip: TextClip,
+    ) -> ColorClip:
         return (
             ColorClip(
                 size=(settings.video_width, int(text_clip.size[1] * 1.4)),
@@ -91,7 +105,7 @@ def create_video(slide: Slide) -> CompositeVideoClip:
     params = params_extractor.extract_params(slide)
 
     background_creator = BackgroundClipCreator()
-    background_clip = background_creator.create_clip(params)
+    background_clip = background_creator.create_clip(params, None)
 
     text_creator = TextClipCreator()
     text_clip = text_creator.create_clip(params, background_clip)

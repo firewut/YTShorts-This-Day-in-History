@@ -2,6 +2,7 @@ import datetime
 import os
 import pathlib
 import random
+import typing as t
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from functools import lru_cache
@@ -14,7 +15,7 @@ load_dotenv()
 
 class ISettingsLoader(ABC):
     @abstractmethod
-    def load(self):
+    def load(self, key: str, default=None):
         pass
 
 
@@ -25,7 +26,7 @@ class EnvSettingsLoader(ISettingsLoader):
 
 class TTSVoiceStrategy(ABC):
     @abstractmethod
-    def get_voices(self) -> tuple[str]:
+    def get_voices(self) -> t.Sequence[str]:
         pass
 
     @abstractmethod
@@ -34,7 +35,7 @@ class TTSVoiceStrategy(ABC):
 
 
 class DefaultTTSVoiceStrategy(TTSVoiceStrategy):
-    def get_voices(self) -> tuple[str]:
+    def get_voices(self) -> t.Sequence[str]:
         return ("alloy", "echo", "fable", "onyx", "nova", "shimmer")
 
     def pick_random_voice(self) -> str:
@@ -59,7 +60,7 @@ class Settings:
     today: datetime.date = field(init=False)
     max_num_images_per_video: int = 5  # Dall-e limitation per minute
 
-    default_video_tags: tuple[str] = ("history", "ai", "today")
+    default_video_tags: t.Sequence[str] = ("history", "ai", "today")
 
     youtube_channel_title: str = "Today in history"
     youtube_channel_id: str = "UCgiSRFK7zOCi3gP8ofAaH9A"
@@ -81,7 +82,7 @@ class Settings:
         self.events_path = pathlib.Path(__file__).parent.parent / "videos"
         os.makedirs(self.events_path, exist_ok=True)
 
-        self.today = datetime.date.today()
+        self.today = datetime.date.today() + datetime.timedelta(days=1)
         self.today_str: str = str(self.today)
 
         # Youtube secrets

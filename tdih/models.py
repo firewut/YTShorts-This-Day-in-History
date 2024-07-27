@@ -4,7 +4,7 @@ import pathlib
 import uuid
 from dataclasses import dataclass
 
-from moviepy.editor import TextClip
+from moviepy.editor import TextClip  # type: ignore
 from openai.types.audio.transcription import Transcription
 from pydantic import BaseModel, Field
 
@@ -26,7 +26,7 @@ class Event(BaseModel):
     date: datetime.date
 
     # Title
-    title: str | None = Field(None, max_length=100)
+    title: str | None = Field(None, max_length=100, default_factory=None)
 
     # Description
     description: str | None = None

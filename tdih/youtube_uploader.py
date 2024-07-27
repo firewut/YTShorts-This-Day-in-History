@@ -115,7 +115,7 @@ class YouTubeVideoUploader(IVideoUploader):
         self.authenticator = authenticator
         self.youtube = self.authenticator.authenticate()
 
-    def upload_video(self, settings: Settings, video: YouTubeVideo):
+    def upload_video(self, settings: Settings, video: IVideo):
         # Upload video logic using YouTube Data API
         media_body = MediaFileUpload(
             filename=video.get_video_file_path(),

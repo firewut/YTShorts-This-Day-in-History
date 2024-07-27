@@ -14,7 +14,7 @@ class IAuthenticator(ABC):
 
 class IVideo(ABC):
     @abstractmethod
-    def get_snippet(self) -> dict[str, t.Any]:
+    def get_snippet(self, settings: Settings) -> dict[str, t.Any]:
         pass
 
     @abstractmethod

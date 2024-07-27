@@ -3,9 +3,9 @@ import logging
 import threading
 import uuid
 
-from moviepy.editor import CompositeVideoClip, concatenate_videoclips
+from moviepy.editor import CompositeVideoClip, concatenate_videoclips  # type: ignore
 
-from tdih.ai_services import AIServiceInterface, OpenAIService
+from tdih.ai_services import AIService, OpenAIService
 from tdih.config import load_settings
 from tdih.models import Event
 from tdih.services import (
@@ -127,6 +127,9 @@ def upload_videos_to_youtube() -> None:
 
     events = local_file_storage.load_events(date)
     for event in events:
+        if not event.video_file_path:
+            continue
+
         tags = event.tags or []
         tags.extend(settings.default_video_tags)
 
@@ -150,7 +153,7 @@ def upload_videos_to_youtube() -> None:
 
 def generate_events() -> None:
     # Initialise AI
-    ai_service: AIServiceInterface = OpenAIService(api_key=settings.api_key)
+    ai_service: AIService = AIService(OpenAIService(api_key=settings.api_key))
     local_file_storage: IEventsFileStorage = LocalEventsFileStorage(
         events_path=settings.events_path
     )
@@ -166,10 +169,15 @@ def generate_events() -> None:
     events: list[Event] = []
 
     for _ in range(settings.num_events):
-        events.append(Event(id=uuid.uuid4(), date=settings.today))
+        events.append(
+            Event(
+                id=uuid.uuid4(),
+                date=settings.today,
+            )
+        )
 
     # These are the events that have already been generated. This is to avoid duplicates
-    today_texts = []
+    today_texts: list[str] = []
 
     for event in events:
         # Text Content
@@ -185,7 +193,7 @@ def generate_events() -> None:
 
         # Get Description
         event.description = description_service.get_description(
-            ai_service, text, exclude_words=[event.title.split(" ")]
+            ai_service, text, exclude_words=event.title.split(" ")
         )
 
         # Get Tags
@@ -202,7 +210,7 @@ def generate_events() -> None:
         # Get TTS Transcription
         transcription = transcription_service.get_transcription(ai_service, tts_buffer)
         event.transcription = transcription
-        event.tts_duration = transcription.duration
+        event.tts_duration = transcription.duration  # type: ignore
         event.transcription_file_path = local_file_storage.save_event_transcription(
             settings.today_str, event.id, transcription
         )
@@ -227,7 +235,7 @@ def generate_event_from_text() -> None:
     text = args.text
 
     # Initialise AI
-    ai_service: AIServiceInterface = OpenAIService(api_key=settings.api_key)
+    ai_service: AIService = AIService(OpenAIService(api_key=settings.api_key))
     local_file_storage: IEventsFileStorage = LocalEventsFileStorage(
         events_path=settings.events_path
     )
@@ -237,6 +245,9 @@ def generate_event_from_text() -> None:
 
     event = Event(id=uuid.uuid4(), date=settings.today)
     event.text = text
+
+    if not event.text:
+        raise ValueError("Text is empty")
 
     # Get TTS
     tts_buffer = tts_service.get_tts(
@@ -249,7 +260,7 @@ def generate_event_from_text() -> None:
     # Get TTS Transcription
     transcription = transcription_service.get_transcription(ai_service, tts_buffer)
     event.transcription = transcription
-    event.tts_duration = transcription.duration
+    event.tts_duration = transcription.duration  # type: ignore
     event.transcription_file_path = local_file_storage.save_event_transcription(
         settings.today_str, event.id, transcription
     )

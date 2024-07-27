@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 
 from openai.types.audio.transcription import Transcription
 
-from tdih.ai_services import AIServiceInterface
+from tdih.ai_services import AIService
 from tdih.config import Settings
 from tdih.templates import (
     DESCRIPTION_TEMPLATE,
@@ -16,9 +16,10 @@ from tdih.templates import (
 
 
 class ITextRequestService(ABC):
+    @abstractmethod
     def get_completion(
         self,
-        ai_service: AIServiceInterface,
+        ai_service: AIService,
         settings: Settings,
         existing_texts: list[str],
     ) -> str:
@@ -29,7 +30,7 @@ class ITextRequestService(ABC):
 class TextRequestService(ITextRequestService):
     def get_completion(
         self,
-        ai_service: AIServiceInterface,
+        ai_service: AIService,
         settings: Settings,
         existing_texts: list[str],
     ) -> str:
@@ -56,13 +57,13 @@ class TextRequestService(ITextRequestService):
 
 class ITitleRequestService(ABC):
     @abstractmethod
-    def get_title(self, ai_service: AIServiceInterface, text: str) -> str:
+    def get_title(self, ai_service: AIService, text: str) -> str:
         """Get title from the AI service."""
         ...
 
 
 class TitleRequestService(ITitleRequestService):
-    def get_title(self, ai_service: AIServiceInterface, text: str) -> str:
+    def get_title(self, ai_service: AIService, text: str) -> str:
         """Get title from the AI service."""
         title_prompt = [
             {
@@ -82,7 +83,7 @@ class TitleRequestService(ITitleRequestService):
 class ITagsRequestService(ABC):
     @abstractmethod
     def get_tags(
-        self, ai_service: AIServiceInterface, text: str, exclude_tags: list[str]
+        self, ai_service: AIService, text: str, exclude_tags: list[str]
     ) -> list[str]:
         """Get tags from the AI service."""
         ...
@@ -90,7 +91,7 @@ class ITagsRequestService(ABC):
 
 class TagsRequestService(ITagsRequestService):
     def get_tags(
-        self, ai_service: AIServiceInterface, text: str, exclude_tags: list[str]
+        self, ai_service: AIService, text: str, exclude_tags: list[str]
     ) -> list[str]:
         """Get tags from the AI service."""
         title_prompt = [
@@ -114,7 +115,7 @@ class TagsRequestService(ITagsRequestService):
 class IDescriptionService(ABC):
     @abstractmethod
     def get_description(
-        self, ai_service: AIServiceInterface, text: str, exclude_words: list[str]
+        self, ai_service: AIService, text: str, exclude_words: list[str]
     ) -> str:
         """Get description from the AI service."""
         ...
@@ -122,7 +123,7 @@ class IDescriptionService(ABC):
 
 class DescriptionService(IDescriptionService):
     def get_description(
-        self, ai_service: AIServiceInterface, text: str, exclude_words: list[str]
+        self, ai_service: AIService, text: str, exclude_words: list[str]
     ) -> str:
         """Get description from the AI service."""
         title_prompt = [
@@ -145,7 +146,7 @@ class DescriptionService(IDescriptionService):
 class ITTSRequestService(ABC):
     @abstractmethod
     def get_tts(
-        self, ai_service: AIServiceInterface, text: str, voice: str
+        self, ai_service: AIService, text: str, voice: str
     ) -> io.BytesIO | None:
         """Get TTS from the AI service."""
         ...
@@ -153,7 +154,7 @@ class ITTSRequestService(ABC):
 
 class TTSRequestService(ITTSRequestService):
     def get_tts(
-        self, ai_service: AIServiceInterface, text: str, voice: str
+        self, ai_service: AIService, text: str, voice: str
     ) -> io.BytesIO | None:
         """Get TTS from the AI service."""
         return ai_service.get_tts(text, voice)
@@ -163,7 +164,7 @@ class ITranscriptionRequestService(ABC):
     @abstractmethod
     def get_transcription(
         self,
-        ai_service: AIServiceInterface,
+        ai_service: AIService,
         tts_buffer: io.BytesIO | None,
     ) -> Transcription:
         """Get TTS transcription from the AI service using the TTS input."""
@@ -172,7 +173,7 @@ class ITranscriptionRequestService(ABC):
 
 class TranscriptionRequestService(ITranscriptionRequestService):
     def get_transcription(
-        self, ai_service: AIServiceInterface, tts_buffer: io.BytesIO | None
+        self, ai_service: AIService, tts_buffer: io.BytesIO | None
     ) -> Transcription:
         """Get TTS transcription from the AI service using the TTS bytes."""
         if not tts_buffer:
@@ -184,7 +185,7 @@ class TranscriptionRequestService(ITranscriptionRequestService):
 class IImageRequestService(ABC):
     @abstractmethod
     def get_image(
-        self, ai_service: AIServiceInterface, settings: Settings, text: str
+        self, ai_service: AIService, settings: Settings, text: str
     ) -> io.BytesIO:
         """Generate an image using the AI service."""
         ...
@@ -192,32 +193,33 @@ class IImageRequestService(ABC):
     @abstractmethod
     def multiple_from_transcription(
         self,
-        ai_service: AIServiceInterface,
+        ai_service: AIService,
         settings: Settings,
+        text: str,
         transcription: Transcription,
     ) -> list[io.BytesIO]:
-        """Generate images using the AI service."""
+        """Generate images using the AI service and text."""
         ...
 
 
 class ImageRequestService(IImageRequestService):
     def get_image(
-        self, ai_service: AIServiceInterface, settings: Settings, text: str
+        self, ai_service: AIService, settings: Settings, text: str
     ) -> io.BytesIO:
         return ai_service.get_image(text, settings)
 
     def multiple_from_transcription(
         self,
-        ai_service: AIServiceInterface,
+        ai_service: AIService,
         settings: Settings,
         text: str,
         transcription: Transcription | None = None,
     ) -> list[io.BytesIO]:
-        """Generate images using the AI service."""
+        """Generate images using the AI service and text."""
         if not transcription:
             raise ValueError("Transcription is empty")
 
-        images_num = len(transcription.segments)
+        images_num = len(transcription.segments)  # type: ignore
         if images_num > settings.max_num_images_per_video:
             images_num = settings.max_num_images_per_video
 

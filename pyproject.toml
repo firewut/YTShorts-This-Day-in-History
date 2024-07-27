@@ -27,6 +27,7 @@ ipdb = "*"
 isort = "*"
 mypy = "*"
 pytest = "*"
+types-requests = "*"
 
 [tool.poetry.scripts]
 create_shorts_for_today = "tdih.main:execute"
@@ -34,3 +35,16 @@ generate_events = "tdih.main:generate_events"
 generate_videos = "tdih.main:generate_videos"
 generate_event_from_text = "tdih.main:generate_event_from_text"
 upload_videos_to_youtube = "tdih.main:upload_videos_to_youtube"
+
+[tool.mypy]
+python_version = "3.12"
+
+[[tool.mypy.overrides]]
+module = [
+    "google.*",
+    "google_auth_oauthlib.*",
+    "googleapiclient.*",
+    "moviepy.*",
+]
+ignore_missing_imports = true
+disallow_untyped_calls = true
