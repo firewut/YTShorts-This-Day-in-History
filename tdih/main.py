@@ -152,6 +152,18 @@ def upload_videos_to_youtube() -> None:
 
 
 def generate_events() -> None:
+    parser = argparse.ArgumentParser(description="Approve events")
+    parser.add_argument(
+        "approve",
+        type=bool,
+        help="Approve events manually",
+        default=True,
+        nargs="?",
+    )
+
+    args = parser.parse_args()
+    approve: bool = args.approve
+
     # Initialise AI
     ai_service: AIService = AIService(OpenAIService(api_key=settings.api_key))
     local_file_storage: IEventsFileStorage = LocalEventsFileStorage(
@@ -165,27 +177,27 @@ def generate_events() -> None:
     transcription_service: ITranscriptionRequestService = TranscriptionRequestService()
     image_generation_service: IImageRequestService = ImageRequestService()
 
-    # Prepare Events
-    events: list[Event] = []
-
-    for _ in range(settings.num_events):
-        events.append(
-            Event(
-                id=uuid.uuid4(),
-                date=settings.today,
-            )
-        )
-
     # These are the events that have already been generated. This is to avoid duplicates
     today_texts: list[str] = []
 
-    for event in events:
+    for _ in range(settings.num_events):
         # Text Content
         text = text_service.get_completion(ai_service, settings, today_texts)
+        today_texts.append(text)
+        # Approve this event ?
+        if approve:
+            print(f"Text: {text}")
+            is_approved = input("Approve? (y/n): ")
+            if is_approved.lower() != "y":
+                continue
+
+        event = Event(
+            id=uuid.uuid4(),
+            date=settings.today,
+        )
         event.text_file_path = local_file_storage.save_event_text(
             settings.today_str, event.id, text
         )
-        today_texts.append(text)
         event.text = text
 
         # Get Title

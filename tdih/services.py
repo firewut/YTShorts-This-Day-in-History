@@ -42,7 +42,7 @@ class TextRequestService(ITextRequestService):
                 "content": PROMPT_TEMPLATE.format(
                     today=settings.today,
                     words_count=settings.words_count,
-                    previous_events="\n".join(existing_texts),
+                    previous_events="\n -".join(existing_texts),
                 ),
             },
             {

@@ -50,7 +50,7 @@ class Settings:
     api_key: str = field(init=False)
     today_str: str = field(init=False)
     events_path: pathlib.Path = field(init=False)
-    num_events: int = 2
+    num_events: int = 5
     video_width: int = 1080
     video_height: int = 1920
     video_fps: int = 30
@@ -82,7 +82,7 @@ class Settings:
         self.events_path = pathlib.Path(__file__).parent.parent / "videos"
         os.makedirs(self.events_path, exist_ok=True)
 
-        self.today = datetime.date.today() + datetime.timedelta(days=1)
+        self.today = datetime.date.today()
         self.today_str: str = str(self.today)
 
         # Youtube secrets
