@@ -22,11 +22,12 @@ pydantic = "*"
 python-dotenv = "*"
 requests = "*"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 ipdb = "*"
 isort = "*"
 mypy = "*"
 pytest = "*"
+pytest-mock = "*"
 types-requests = "*"
 
 [tool.poetry.scripts]
