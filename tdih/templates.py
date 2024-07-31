@@ -1,6 +1,6 @@
 PROMPT_TEMPLATE = """
-Today date is {today}. 
-You must get "today in history" and write it as follows:
+Today date is {today}.
+You must look for Historical event ( use google ) which happened today years ago and write it as follows:
 - It must be about historical events.
 - It must be targeted at the general public and safe for kids.
 - It must be informative, engaging and entertaining.

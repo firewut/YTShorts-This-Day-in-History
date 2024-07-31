@@ -65,7 +65,7 @@ class OpenAIService(IAIService):
 
     def get_default_completion_model(self) -> str:
         """Get the default completion model."""
-        return "gpt-4o-mini"
+        return "gpt-4o"
 
     def get_default_tts_model(self) -> str:
         """Get the default TTS model."""

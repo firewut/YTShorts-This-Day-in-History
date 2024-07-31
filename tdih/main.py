@@ -127,7 +127,7 @@ def upload_videos_to_youtube() -> None:
 
     events = local_file_storage.load_events(date)
     for event in events:
-        if not event.video_file_path:
+        if not event.video_file_path or not event.video_file_path.exists():
             continue
 
         tags = event.tags or []
