@@ -180,14 +180,14 @@ def generate_events() -> None:
     # These are the events that have already been generated. This is to avoid duplicates
     today_texts: list[str] = []
 
-    for _ in range(settings.num_events):
+    for i in range(settings.num_events):
         # Text Content
         text = text_service.get_completion(ai_service, settings, today_texts)
         today_texts.append(text)
         # Approve this event ?
         if approve:
             print(f"Text: {text}")
-            is_approved = input("Approve? (y/n): ")
+            is_approved = input(f"Approve? (y/n) [{i+1}/{settings.num_events}]: ")
             if is_approved.lower() != "y":
                 continue
 
