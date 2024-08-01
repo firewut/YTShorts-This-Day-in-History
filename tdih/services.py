@@ -77,7 +77,7 @@ class TitleRequestService(ITitleRequestService):
         ]
 
         response = ai_service.get_completion(title_prompt)
-        return response.choices[0].message.content.strip()
+        return response.choices[0].message.content.strip().replace("\n", " ")
 
 
 class ITagsRequestService(ABC):

@@ -148,7 +148,8 @@ def upload_videos_to_youtube() -> None:
             category_id=settings.youtube_video_category,
             made_for_kids=settings.youtube_made_for_kids,
         )
-        upload_service.upload(video_data)
+        print(">>>", video_data.model_dump())
+        # upload_service.upload(video_data)
 
 
 def generate_events() -> None:
