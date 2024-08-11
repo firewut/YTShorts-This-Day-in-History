@@ -121,9 +121,9 @@ def upload_videos_to_youtube() -> None:
         events_path=settings.events_path
     )
 
-    # authenticator = YouTubeAuthenticator(settings)
-    # uploader = YouTubeVideoUploader(authenticator)
-    # upload_service = YouTubeUploadService(uploader, settings)
+    authenticator = YouTubeAuthenticator(settings)
+    uploader = YouTubeVideoUploader(authenticator)
+    upload_service = YouTubeUploadService(uploader, settings)
 
     events = local_file_storage.load_events(date)
     for event in events:
@@ -135,10 +135,10 @@ def upload_videos_to_youtube() -> None:
 
         title_tags = ""
         if tags:
-            for tag in tags:
-                tag = tag.replace("\n.", "").replace("\n", "")
-                tag = tag.lower().replace(" ", "")
-                tags.append(tag)
+            tags = [
+                tag.lower().replace("\n.", "").replace("\n", "").replace(" ", "")
+                for tag in tags
+            ]
 
             title_tags = " #".join(tags)
 
@@ -150,8 +150,7 @@ def upload_videos_to_youtube() -> None:
             category_id=settings.youtube_video_category,
             made_for_kids=settings.youtube_made_for_kids,
         )
-        print(video_data.model_dump())
-        # upload_service.upload(video_data)
+        upload_service.upload(video_data)
 
 
 def generate_events() -> None:

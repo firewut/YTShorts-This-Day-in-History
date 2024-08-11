@@ -12,6 +12,7 @@ You must look for Historical event ( use google ) which happened today years ago
 AVOID these topics:
 - colonisation
 - conspiracy theory
+- death
 - gender identity and LGBTQ+ issues
 - health and vaccination debates
 - historical revisionism
